@@ -4,21 +4,35 @@ norm = np.linalg.norm
 from numba import jit
 
 
-def LanczosBidiag(A, k, b, usejit=True):
+def bestApproxSVD(A, k):
+    U, S, Vh = np.ninalg.svd(A)
+    m, n = A.shape
+    X = np.zeros()
+    for j in range(0, k):
+        X = X + S(j)*U[:, j]@Vh[:, j].T
+    return X
+        
+
+def lanczosSVD(A, k, b, usejit=False, orth=True):
+    Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+    U, S, Vh = np.ninalg.svd(Bk)
+    return U, S, Vh
+     
+def LanczosBidiag(A, k, b, usejit=False, orth=True):
     if usejit:
-        u, v, alfa, beta = LanczosBidiagMain(A, k, b)
+        u, v, alfa, beta = LanczosBidiagMain(A, k, b, orth)
     else:
-        u, v, alfa, beta = LanczosBidiagMain.py_func(A, k, b)
+        u, v, alfa, beta = LanczosBidiagMain.py_func(A, k, b, orth)
     Pk = u.T
     Qk = v.T
     Bk = scsp.diags([alfa, beta[1:]], [0, -1])
     return Pk, Qk, Bk
 
 @jit(nopython=True)
-def LanczosBidiagMain(A, k, b):
-    n = np.shape(A)[0]
+def LanczosBidiagMain(A, k, b, orth):
+    m, n = A.shape
     v = np.zeros((k, n)) #row k is vk
-    u = np.zeros((k, n))
+    u = np.zeros((k, m))
     alfa = np.zeros(k)
     beta = np.zeros(k)
     beta[0] = norm(b)
@@ -32,9 +46,10 @@ def LanczosBidiagMain(A, k, b):
         u[i+1] = Avi_min_alfaui/beta[i+1]
         
         w = A.T@u[i+1] - beta[i+1]*v[i]
-        for l in range(0, i):
-            w = w - (v[l].T@w)*v[l]
-            
+        if orth:
+            for l in range(0, i):
+                w = w - (v[l].T@w)*v[l]
+                
         alfa[i+1] = norm(w)
         v[i+1] = w/alfa[i+1]
     return u, v, alfa, beta

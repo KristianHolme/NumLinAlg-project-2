@@ -1,4 +1,4 @@
-from lanczosBidiagonalization import *
+from lanczos import *
 import numpy as np
 import time
 from functools import wraps
@@ -16,21 +16,23 @@ def plsgofast(func):
     return timeit_wrapper
 
 @plsgofast
-def runLanczos(N=5, k=3, usejit=True):
-    A = np.random.rand(N, N)
-    b = np.random.rand(N)
-    Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit)
+def runLanczos(M=2, N=2, k=2, usejit=True, orth=True, verbose=False):
+    A = np.random.rand(M, N)
+    b = np.random.rand(M)
+    Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
     Aprox = Pk@Bk@Qk.T
     err = np.linalg.norm(Aprox - A)
-    print(f"error:{err}")
+    if verbose:print(f"error:{err}")
     pass
 
-def testLanczos(N=5, k=3, usejit=True):
+def testLanczos(N=5, k=3, orth=True):
     #small case to compile
-    testLanczos(N=2, k=2)
+    runLanczos(N=2, k=2, orth=orth)
 
     #without jit
-    testLanczos(N=2000, k=400, usejit=False)
+    runLanczos(M = 1500, N=2000, k=400, usejit=False, orth=orth)
 
     #test with jit
-    testLanczos(N=2000, k=400)
+    runLanczos(M=1500, N=2000, k=400, orth=orth)
+
+testLanczos()
