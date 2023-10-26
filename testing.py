@@ -2,7 +2,10 @@ from lanczos import *
 import numpy as np
 import time
 from functools import wraps
-
+from cayley import *
+from heatequation import *
+from timeIntegration import *
+norm = np.linalg.norm
 
 def plsgofast(func):
     @wraps(func)
@@ -35,4 +38,47 @@ def testLanczos(N=5, k=3, orth=True):
     #test with jit
     runLanczos(M=1500, N=2000, k=400, orth=orth)
 
-testLanczos()
+def testCay(m=2, k=2):
+  # Generate a random m x (m+k) matrix
+    A = np.random.rand(m, m+k)
+
+    # Perform QR factorization to get an orthogonal matrix Q
+    Q, _ = np.linalg.qr(A)
+
+    # Partition Q into F and U
+    F = Q[:, :k]
+    U = Q[:, k:2*k]
+    I = np.identity(k)
+    # Verify that U^T U = I and F^T U = 0
+    print("U^T U - I norm=")
+    print(np.linalg.norm((U.T @ U)-I))
+    print("F^T U norm:")
+    print(np.linalg.norm(F.T @ U))
+    
+    CDir = cayDirect(U, F, verbose=True)
+    C1 = cay1(U, F, verbose=True)
+    CQR = cayQR(U, F, verbose=True)
+    
+    C1err = norm(C1-CDir)
+    CQRerr = norm(CQR - CDir)
+    print(f"C1err: {C1err}")
+    print(f"CQR err: {CQRerr}")
+    
+    pass
+
+def g(x, y):
+    return np.sin(np.pi*x)*np.sin(2*np.pi*y)
+def u(x, y, t):
+    return np.exp(5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
+
+def testODEsolver():
+    t0 = 0
+    tf = 0.2
+    h0 = 0.01
+    TimeIntegration(t0, tf, h0, U0, S0, V0, dA, stepfunction, 
+                    cay=cay1,verbose = False,
+                    TOL= 1e-12, maxTimeCuts=3)
+    
+# testLanczos()
+# testCay(m=7*1000, k=5*370)
+
