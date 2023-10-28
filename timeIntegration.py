@@ -5,11 +5,12 @@ from cayley import *
 from time import time
 
 def TimeIntegration(t0, tf, h0, U0, S0, V0, dA, stepfunction, cay=cay1,verbose = False,
-                    TOL= 1e-12, maxTimeCuts=3):
-    t0 = time()
+                    TOL= 1e-5, maxTimeCuts=3):
+    tStart = time()
     Ulist = [U0]
     Vlist = [V0]
     Slist = [S0]
+    timesteps = [t0]
 
     t = t0
     h = h0
@@ -21,28 +22,30 @@ def TimeIntegration(t0, tf, h0, U0, S0, V0, dA, stepfunction, cay=cay1,verbose =
     if verbose: print(f"Starting integrating at t:{t0}, with step size {h0}")
     
     while t <= tf:
-        if verbose: print(f"Solving t:{t} -> {t}")
+        if verbose: print(f"Solving step {j+1}. Trying:{t} -> {t+hnew}")
         U, S, V, h, t, hnew = integrateStep(Ulist[-1], Slist[-1], Vlist[-1], dA, hnew, t, count, 
                                             stepfunction, cay, TOL, maxTimeCuts, verbose=verbose)
-        if verbose:print(f"")
+        if verbose:print(f"Step complete. Now at t={t}")
         Ulist.append(U)
         Slist.append(S)
         Vlist.append(V)
+        timesteps.append(t)
         j = j + 1
         
     if t > tf:
         #do the last step again with shorter step length
-        t = tf- h
+        t = t- h
         h = tf - t
-        U, S, V = USVstep(U0, S0, V0, dA, h, t, cay)
+        U, S, V, sigma = stepfunction(U0, S0, V0, dA, h, t, cay)
         Ulist[-1] = U
         Slist[-1] = S
         Vlist[-1] = V
-    if verbose: print(f"Finished integrating in {j} steps")
-    return Ulist, Slist, Vlist
-        
+        timesteps[-1] = tf
+    if verbose: print(f"Finished integrating in {j} steps, {time()-tStart}s")
+    return Ulist, Slist, Vlist, timesteps
+
 def integrateStep(U0, S0, V0, dA, h, t, count, stepfunction, cay, TOL, maxTimeCuts, verbose=False):
-    U, S, V, sigma = stepfunction(U0, S0, V0, dA, h, t)
+    U, S, V, sigma = stepfunction(U0, S0, V0, dA, h, t, cay)
         
     t = t + h
     #h is the step size taken to get to t
@@ -50,15 +53,19 @@ def integrateStep(U0, S0, V0, dA, h, t, count, stepfunction, cay, TOL, maxTimeCu
     
     if tnew < t and count <= maxTimeCuts:
         if verbose: print(f"Cutting time step. h:{hnew}, count:{count}")
-        U, S, V, h, t, hnew = integrateStep(U0, S0, V0, dA, hnew, tnew, count+1, stepfunction, cay, TOL, maxTimeCuts)
+        U, S, V, h, t, hnew = integrateStep(U0, S0, V0, dA, hnew, tnew, count+1, stepfunction, cay, TOL, 
+                                            maxTimeCuts, verbose=verbose)
         #h is the step size taken to get to t
+    if count > maxTimeCuts and verbose:
+        print(f"Maximum time step cuts reached ({maxTimeCuts})")
+
     return U, S, V, h, t, hnew
     
 def USVstep(Uj, Sj, Vj, dA, h, tj, cay):
     m, k = Uj.shape
     n, k1 = Vj.shape
-    k2, k3 = Sj.shape
-    assert k2 == k3 and k  == k1 and k2 == k1, "dimension mismatch"
+    k2 = Sj.shape
+    assert k  == k1 and k2 == k1, "dimension mismatch"
 
     Ik = np.identity(k)
     Im = np.identity(m)
@@ -108,8 +115,8 @@ def stepcontrol(sigma, TOL, h, t):
 def linMatODEStep(Uj, Sj, Vj, dA, h, tj, cay):
     m, k = Uj.shape
     n, k1 = Vj.shape
-    k2, k3 = Sj.shape
-    assert k2 == k3 and k  == k1 and k2 == k1, "dimension mismatch"
+    k2 = Sj.shape[0]
+    assert k  == k1 and k2 == k1, "dimension mismatch"
     
     Q, R = dA(m, n)
     

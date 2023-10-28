@@ -5,6 +5,8 @@ from functools import wraps
 from cayley import *
 from heatequation import *
 from timeIntegration import *
+from utils import *
+import matplotlib.pyplot as plt
 norm = np.linalg.norm
 
 def plsgofast(func):
@@ -71,14 +73,22 @@ def g(x, y):
 def u(x, y, t):
     return np.exp(5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
 
-def testODEsolver():
+def testODEsolver(N = 32, k=4):
     t0 = 0
     tf = 0.2
-    h0 = 0.01
-    TimeIntegration(t0, tf, h0, U0, S0, V0, dA, stepfunction, 
-                    cay=cay1,verbose = False,
-                    TOL= 1e-12, maxTimeCuts=3)
+    h0 = 0.001
+    A0 = initval(g, N)
+    b = np.random.rand(A0.shape[0])
+    U0, S0, V0 = lanczosSVD(A0, k, b)
+    
+    
+    Ulist, Slist, Vlist, timesteps = TimeIntegration(t0, tf, h0, U0, S0, V0, diff, linMatODEStep, 
+                    cay=cay1,verbose = True,
+                    TOL= 1e-5, maxTimeCuts=3)
+    Ylist = makeY(Ulist, Slist, Vlist)
+    plotRankApproxError(Ylist, u, timesteps)
+    
     
 # testLanczos()
 # testCay(m=7*1000, k=5*370)
-
+testODEsolver()
