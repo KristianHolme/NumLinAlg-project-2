@@ -6,11 +6,11 @@ def diff(m, n):
     N = n-1
     k = 1/N
     Ltilde = np.zeros((N+1, N+1))
-    offdiag = np.ones(N-1)*-1
-    maindiag = np.ones(N)*2
+    offdiag = np.ones(N-2)*-1
+    maindiag = np.ones(N-1)*2
     L = 1/k**2 * diags([offdiag, maindiag, offdiag], [-1, 0, 1]).toarray()
     
-    Ltilde[1:N+1, 1:N+1] = L
+    Ltilde[1:N, 1:N] = L
     # dA = Ltilde@A + A@Ltilde
     return Ltilde, Ltilde
 

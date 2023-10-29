@@ -104,7 +104,7 @@ def stepcontrol(sigma, TOL, h, t):
             R = (TOL/sigma)**(1/3)
             if R > 0.9 or R < 0.5:
                 R = 0.7
-        elif sigma > TOL/16:
+        elif sigma > TOL/3:#byttet fra 16 til 3
             R = 1
         else:
             R = 2
@@ -124,21 +124,21 @@ def linMatODEStep(Uj, Sj, Vj, dA, h, tj, cay):
     Im = np.identity(m)
     In = np.identity(n)
     
-    KS1 = h*(Uj.T)@Q@Uj@Sj + Sj@(Vj.T)@R@Vj
+    KS1 = h*((Uj.T)@Q@Uj@Sj + Sj@(Vj.T)@R@Vj)#experiment: h utenfor alt
     Sjint = Sj + 0.5*KS1
     
     FUj = (Im - Uj@(Uj.T))@Q@Uj
     Ujint = cay(Uj, h/2*FUj)@Uj
-    FVj = (In - Vj@(Vj.T))@R@Vj
+    FVj = (In - Vj@(Vj.T))@(R.T)@Vj
     Vjint = cay(Vj, h/2*FVj)@Vj
     
-    KS2 = h*(Ujint.T)@Q@Ujint@Sjint + Sjint@(Vjint.T)@R@Vjint
+    KS2 = h*((Ujint.T)@Q@Ujint@Sjint + Sjint@(Vjint.T)@R@Vjint) #eksperiment^^
     Sjp1 = Sj + KS2
     
     FUjint = (Im - Ujint@(Ujint.T))@Q@Ujint
     Ujp1 = cay(Ujint, h*FUjint)@Uj #not Ujint? no
-    FVjint = (In - Vjint@(Vjint.T))@R@Vjint
-    Vjp1 = cay(Vjint, h*FVjint) 
+    FVjint = (In - Vjint@(Vjint.T))@(R.T)@Vjint
+    Vjp1 = cay(Vjint, h*FVjint)@Vj
     
     Sest = Sj + KS1
     Uest = cay(Uj, h*FUj)@Uj

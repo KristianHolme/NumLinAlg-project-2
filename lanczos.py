@@ -16,7 +16,7 @@ def bestApproxSVD(A, k):
 def lanczosSVD(A, k, b, usejit=False, orth=True):
     Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
     U, S, Vh = np.linalg.svd(Bk.toarray())
-    return U, S, Vh
+    return U, np.diag(S), Vh
      
 def LanczosBidiag(A, k, b, usejit=False, orth=True):
     if usejit:

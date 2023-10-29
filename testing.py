@@ -6,6 +6,7 @@ from cayley import *
 from heatequation import *
 from timeIntegration import *
 from utils import *
+from plotting import *
 import matplotlib.pyplot as plt
 norm = np.linalg.norm
 
@@ -73,20 +74,21 @@ def g(x, y):
 def u(x, y, t):
     return np.exp(5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
 
-def testODEsolver(N = 32, k=4):
+def testODEsolver(N = 32, k=3):
     t0 = 0
     tf = 0.2
     h0 = 0.001
     A0 = initval(g, N)
     b = np.random.rand(A0.shape[0])
-    U0, S0, V0 = lanczosSVD(A0, k, b)
-    
+    Pk, Qk, Bk = LanczosBidiag(A0, k, b)
+    U0, S0, V0 = Pk, Bk, Qk
     
     Ulist, Slist, Vlist, timesteps = TimeIntegration(t0, tf, h0, U0, S0, V0, diff, linMatODEStep, 
                     cay=cay1,verbose = True,
-                    TOL= 1e-5, maxTimeCuts=3)
+                    TOL= 1e-3, maxTimeCuts=3)
     Ylist = makeY(Ulist, Slist, Vlist)
-    plotRankApproxError(Ylist, u, timesteps)
+    plotRankApproxError(Ylist, u, timesteps, k)
+    pass
     
     
 # testLanczos()
