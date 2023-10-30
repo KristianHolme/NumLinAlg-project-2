@@ -22,10 +22,10 @@ def TimeIntegration(t0, tf, h0, U0, S0, V0, dA, stepfunction, cay=cay1,verbose =
     if verbose: print(f"Starting integrating at t:{t0}, with step size {h0}")
     
     while t <= tf:
-        if verbose: print(f"Solving step {j+1}. Trying:{t} -> {t+hnew}")
+        if verbose > 1: print(f"Solving step {j+1} from t:{round(t, 4)}. Trying h:{round(hnew, 6)}")
         U, S, V, h, t, hnew = integrateStep(Ulist[-1], Slist[-1], Vlist[-1], dA, hnew, t, count, 
                                             stepfunction, cay, TOL, maxTimeCuts, verbose=verbose)
-        if verbose:print(f"Step complete. Now at t={t}")
+        if verbose > 1 :print(f"Step complete. Now at t={t}")
         Ulist.append(U)
         Slist.append(S)
         Vlist.append(V)
@@ -36,7 +36,7 @@ def TimeIntegration(t0, tf, h0, U0, S0, V0, dA, stepfunction, cay=cay1,verbose =
         #do the last step again with shorter step length
         t = t- h
         h = tf - t
-        U, S, V, sigma = stepfunction(U0, S0, V0, dA, h, t, cay)
+        U, S, V, sigma = stepfunction(Ulist[-2], Slist[-2], Vlist[-1], dA, h, t, cay)
         Ulist[-1] = U
         Slist[-1] = S
         Vlist[-1] = V
@@ -52,11 +52,11 @@ def integrateStep(U0, S0, V0, dA, h, t, count, stepfunction, cay, TOL, maxTimeCu
     tnew, hnew = stepcontrol(sigma, TOL, h, t)
     
     if tnew < t and count <= maxTimeCuts:
-        if verbose: print(f"Cutting time step. h:{hnew}, count:{count}")
+        if verbose > 1: print(f"Cutting time step. h:{hnew}, count:{count}")
         U, S, V, h, t, hnew = integrateStep(U0, S0, V0, dA, hnew, tnew, count+1, stepfunction, cay, TOL, 
                                             maxTimeCuts, verbose=verbose)
         #h is the step size taken to get to t
-    if count > maxTimeCuts and verbose:
+    if count > maxTimeCuts and verbose>1:
         print(f"Maximum time step cuts reached ({maxTimeCuts})")
 
     return U, S, V, h, t, hnew
@@ -64,28 +64,28 @@ def integrateStep(U0, S0, V0, dA, h, t, count, stepfunction, cay, TOL, maxTimeCu
 def USVstep(Uj, Sj, Vj, dA, h, tj, cay):
     m, k = Uj.shape
     n, k1 = Vj.shape
-    k2 = Sj.shape
+    k2,k3 = Sj.shape
     assert k  == k1 and k2 == k1, "dimension mismatch"
 
     Ik = np.identity(k)
     Im = np.identity(m)
     In = np.identity(n)
     
-    KS1 = h*Uj.T@dA(m, n, tj)@Vj
+    KS1 = h*Uj.T@dA(tj)@Vj
     Sjint = Sj + 0.5*KS1
     
-    FUj = (Im - Uj@(Uj.T))@dA(m, n, tj)@Vj@(np.linalg.inv(Sj))
+    FUj = (Im - Uj@(Uj.T))@dA(tj)@Vj@(np.linalg.inv(Sj))
     Ujint = cay(Uj, h/2*FUj)@Uj
-    FVj = (In - Vj@(Vj.T))@(dA(m, n, tj).T)@Uj@(np.linalg.inv(Sj.T))
+    FVj = (In - Vj@(Vj.T))@(dA(tj).T)@Uj@(np.linalg.inv(Sj.T))
     Vjint = cay(Vj, h/2*FVj)@Vj
     
-    KS2 = h*Ujint.T@dA(m, n, tj + h/2)@Vjint
+    KS2 = h*Ujint.T@dA(tj + h/2)@Vjint
     Sjp1 = Sj + KS2
     
-    FUjint = (Im - Ujint@(Ujint.T))@dA(m, n, tj+h/2)@Vjint@(np.linalg.inv(Sjint))
+    FUjint = (Im - Ujint@(Ujint.T))@dA(tj+h/2)@Vjint@(np.linalg.inv(Sjint))
     Ujp1 = cay(Ujint, h*FUjint)@Uj #not Ujint? no
-    FVjint = (In - Vjint@(Vjint.T))@dA(m, n, tj+h/2).T@Ujint@(np.linalg.inv(Sjint.T))
-    Vjp1 = cay(Vjint, h*FVjint) 
+    FVjint = (In - Vjint@(Vjint.T))@dA(tj+h/2).T@Ujint@(np.linalg.inv(Sjint.T))
+    Vjp1 = cay(Vjint, h*FVjint)@Vj
     
     Sest = Sjint + 0.5*KS1
     Uest = cay(Uj, h*FUj)@Uj
@@ -104,7 +104,7 @@ def stepcontrol(sigma, TOL, h, t):
             R = (TOL/sigma)**(1/3)
             if R > 0.9 or R < 0.5:
                 R = 0.7
-        elif sigma > TOL/3:#byttet fra 16 til 3
+        elif sigma > TOL/16:#byttet fra 16 til 3
             R = 1
         else:
             R = 2

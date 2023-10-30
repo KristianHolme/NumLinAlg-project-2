@@ -25,7 +25,7 @@ def LanczosBidiag(A, k, b, usejit=False, orth=True):
         u, v, alfa, beta = LanczosBidiagMain.py_func(A, k, b, orth)
     Pk = u.T
     Qk = v.T
-    Bk = scsp.diags([alfa, beta[1:]], [0, -1])
+    Bk = scsp.diags([alfa, beta[1:]], [0, -1]).toarray()
     return Pk, Qk, Bk
 
 @jit(nopython=True)

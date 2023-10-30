@@ -14,6 +14,11 @@ def diff(m, n):
     # dA = Ltilde@A + A@Ltilde
     return Ltilde, Ltilde
 
+def diff2(m, n):
+    Q, R = diff(m, n)
+    Q = Q*0
+    R = R*0
+    return Q, R
 def initval(g,N):
     x = np.linspace(0,1, N+1)
     y = x

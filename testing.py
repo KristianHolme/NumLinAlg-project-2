@@ -69,12 +69,37 @@ def testCay(m=2, k=2):
     
     pass
 
+def testLanczos2(N=2, k=2, usejit=False, orth=True, verbose=True, loop=False):
+    A = np.random.rand(N+1, N+1)
+    A = initval(g, N)
+    if verbose:print(f"Rank A:{np.linalg.matrix_rank(A)}")
+    b = np.random.rand(N+1)
+    if loop:
+        err = np.zeros(N+1)
+        for k in range(1, N+1 +1):
+            Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+            Aprox = Pk@Bk@Qk.T
+            if verbose: print(f"k:{k}, approx rank:{np.linalg.matrix_rank(Aprox)}")
+            err[k-1] = np.linalg.norm(Aprox - A)
+            if verbose:print(f"error:{err[k-1]}")
+    
+        plt.plot(err)
+        plt.show()
+    else:
+        Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+        Aprox = Pk@Bk@Qk.T
+        if verbose: print(f"k:{k}, approx rank:{np.linalg.matrix_rank(Aprox)}")
+        err = np.linalg.norm(Aprox - A)
+        if verbose:print(f"error:{err}")
+        
+    pass
+
 def g(x, y):
     return np.sin(np.pi*x)*np.sin(2*np.pi*y)
 def u(x, y, t):
     return np.exp(5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
 
-def testODEsolver(N = 32, k=3):
+def testODEsolver(N = 32, k=2):
     t0 = 0
     tf = 0.2
     h0 = 0.001
@@ -83,14 +108,41 @@ def testODEsolver(N = 32, k=3):
     Pk, Qk, Bk = LanczosBidiag(A0, k, b)
     U0, S0, V0 = Pk, Bk, Qk
     
-    Ulist, Slist, Vlist, timesteps = TimeIntegration(t0, tf, h0, U0, S0, V0, diff, linMatODEStep, 
+    Ulist, Slist, Vlist, timesteps = TimeIntegration(t0, tf, h0, U0, S0, V0, 
+                    diff2, linMatODEStep, 
                     cay=cay1,verbose = True,
                     TOL= 1e-3, maxTimeCuts=3)
     Ylist = makeY(Ulist, Slist, Vlist)
     plotRankApproxError(Ylist, u, timesteps, k)
     pass
+
+def testAnim():
+    A, dA = makeAfuncs()
+    animateMatrix(A)
+    pass
+
+def testTimeInt(n = 10, k=10, eps=1e-3):
+    A, dA = makeAfuncs(n, eps=eps)
+    N = 99
+    t0 = 0
+    tf = 1
+    h0 = 0.1
+    A0 = A(t0)
+    b = np.random.rand(A0.shape[0])
+    Pk, Qk, Bk = LanczosBidiag(A0, k, b)
+    U0, S0, V0 = Pk, Bk, Qk
     
+    Ulist, Slist, Vlist, timesteps = TimeIntegration(t0, tf, h0, U0, S0, V0, 
+                    dA, USVstep, 
+                    cay=cay1,verbose = 2,
+                    TOL= 1e-2, maxTimeCuts=10)
+    Ylist = makeY(Ulist, Slist, Vlist)
+    plotRankApproxError(Ylist, A, timesteps, k, needGetSol=False)
+    pass
     
 # testLanczos()
 # testCay(m=7*1000, k=5*370)
-testODEsolver()
+# testLanczos2(N=32, k=2, loop=False, orth=True)
+# testODEsolver(N=32, k=1)
+# testAnim()
+testTimeInt(n=10, k=10)
