@@ -74,6 +74,26 @@ def animateMatrix(A):
     ani = FuncAnimation(fig, update, frames=np.linspace(0, 10, 100), blit=True)
     ani.save("animated_matrix.gif", writer="imagemagick")
     plt.show()
+    
+def plotTimeIntegrationResults(ax, results, title):
+    Werr = results['Werr']
+    Xerr = results['Xerr']
+    XYerr = results['XYerr']
+    Yerr = results['Yerr']
+    dYerr = results['dYerr']
+    timesteps = results['timesteps']
+    
+    ax.plot(timesteps, Werr, linestyle='-', label="$||W(t)-A(t)||$")
+    ax.plot(timesteps, Xerr, linestyle='-', label="$||X(t)-A(t)||$")
+    ax.plot(timesteps, Yerr, linestyle='-', label="$||Y(t)-A(t)||$")
+    ax.plot(timesteps, XYerr, linestyle=':', label="$||X(t)-Y(t)||$")
+    ax.plot(timesteps[0:-1], dYerr, linestyle='-.', label="$||\dot{Y}(t)-\dot{A}(t)||$")
+    
+    ax.legend()
+    ax.set_xlabel(f"time [s]")
+    ax.set_title(title)
+    
+    
 
 """
 import matplotlib.pyplot as plt

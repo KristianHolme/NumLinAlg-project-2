@@ -1,34 +1,55 @@
 import numpy as np
 import scipy.sparse as scsp
+from time import time
 norm = np.linalg.norm
-from numba import jit
 
 
 def bestApproxSVD(A, k):
-    U, S, Vh = np.ninalg.svd(A)
+    U, S, Vh = np.linalg.svd(A)
     m, n = A.shape
-    X = np.zeros()
-    for j in range(0, k):
-        X = X + S(j)*U[:, j]@Vh[:, j].T
+    X = np.zeros((m, n))
+    # for j in range(0, k):
+    #     X = X + S[j]*np.outer(U[:, j],(Vh[j, :]))
+    Skdiag = np.diag(S[:k])
+    X = U[:, :k]@Skdiag@(Vh[:k, :])
     return X
-        
+   
+def bestApproxOverTime(ts, A, k, verbose=0):
+    tStart = time()
+    Xs = []
+    for t in ts:
+        X = bestApproxSVD(A(t), k) 
+        Xs.append(X) 
+    tend = time() - tStart
+    if verbose: print(f"BestApproxSVD finished in {tend}s")
+    return Xs, tend
 
-def lanczosSVD(A, k, b, usejit=False, orth=True):
-    Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+def lanczosSVD(A, k, b, orth=True):
+    Pk, Qk, Bk = LanczosBidiag(A, k, b, orth=orth)
     U, S, Vh = np.linalg.svd(Bk.toarray())
     return U, np.diag(S), Vh
+
+def LanczosOverTime(ts, A, k, b, orth=True, verbose = 0):
+    tStart = time()
+    W = []
+    for t in ts:
+        Pk, Qk, Bk = LanczosBidiag(A(t), k, b, orth=orth)
+
+        Aprox = Pk@Bk@(Qk.T)
+        W.append(Aprox)
+    tend = time() - tStart
+    if verbose: print(f"Lanczos approx. Finished in {tend}s")
+    return W, tend
      
-def LanczosBidiag(A, k, b, usejit=False, orth=True):
-    if usejit:
-        u, v, alfa, beta = LanczosBidiagMain(A, k, b, orth)
-    else:
-        u, v, alfa, beta = LanczosBidiagMain.py_func(A, k, b, orth)
+def LanczosBidiag(A, k, b, orth=True):
+    u, v, alfa, beta = LanczosBidiagMain(A, k, b, orth)
+
     Pk = u.T
     Qk = v.T
     Bk = scsp.diags([alfa, beta[1:]], [0, -1]).toarray()
     return Pk, Qk, Bk
 
-@jit(nopython=True)
+
 def LanczosBidiagMain(A, k, b, orth):
     m, n = A.shape
     v = np.zeros((k, n)) #row k is vk
