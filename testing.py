@@ -34,7 +34,7 @@ def testBestSVD(M=2, N=2, k=2, verbose=1):
     t0 = time()
     A = np.random.rand(M, N)
     b = np.random.rand(M)
-    X = bestApproxSVD(A, k)
+    X = bestApproxSVDRecon(A, k)
     err = np.linalg.norm(X - A)
     tend = time() - t0
     if verbose:print(f"error:{err}, time:{tend}")
@@ -110,14 +110,12 @@ def testODEsolver(N = 32, k=2):
     tf = 0.2
     h0 = 0.001
     A0 = initval(g, N)
-    b = np.random.rand(A0.shape[0])
-    Pk, Qk, Bk = LanczosBidiag(A0, k, b)
-    U0, S0, V0 = Pk, Bk, Qk
+    U0, S0, V0 = getU0S0V0(A0, k)
     
-    Ulist, Slist, Vlist, timesteps = TimeIntegration(t0, tf, h0, U0, S0, V0, 
-                    diff2, linMatODEStep, 
-                    cay=cay1,verbose = True,
-                    TOL= 1e-3, maxTimeCuts=3)
+    Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRUn= TimeIntegration(t0, tf, h0, U0, S0, V0, 
+                    diff, linMatODEStep, 
+                    cay=cay1, verbose = 3,
+                    TOL= 1e-0, maxTimeCuts=3)
     Ylist = makeY(Ulist, Slist, Vlist)
     plotRankApproxError(Ylist, u, timesteps, k)
     pass
@@ -133,9 +131,7 @@ def testTimeInt(n = 10, k=10, eps=1e-3, TOL=1e-2, maxCuts=10):
     tf = 1
     h0 = 0.1
     A0 = A(t0)
-    b = np.random.rand(A0.shape[0])
-    Pk, Qk, Bk = LanczosBidiag(A0, k, b)
-    U0, S0, V0 = Pk, Bk, Qk
+    U0, S0, V0 = getU0S0V0(A0, k)
     
     Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRUn = TimeIntegration(
         t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay1, verbose = 2,
@@ -143,19 +139,18 @@ def testTimeInt(n = 10, k=10, eps=1e-3, TOL=1e-2, maxCuts=10):
     Ylist = makeY(Ulist, Slist, Vlist)
     plotRankApproxError(Ylist, A, timesteps, k, needGetSol=False)
     pass
-def runTimeIntegrationex4(n=10, k=10, eps=1e-3):
+
+def runTimeIntegrationex4(n=10, k=10, eps=1e-3, cay=cay1):
     A, dA = makeAfuncs(n, eps=eps)
     # N = 99
     t0 = 0
     tf = 1
     h0 = 0.1
     A0 = A(t0)
-    b = np.random.rand(A0.shape[0])
-    Pk, Qk, Bk = LanczosBidiag(A0, k, b)
-    U0, S0, V0 = Pk, Bk, Qk
+    U0, S0, V0 = getU0S0V0(A0, k)
     
     Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRun = TimeIntegration(
-        t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay1, verbose = 2,
+        t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay, verbose = 2,
         TOL= 1e-2, maxTimeCuts=10)
     Ylist = makeY(Ulist, Slist, Vlist)
     dYlist = makedY(Ulist, Slist, Vlist, dUlist, dSlist, dVlist)
@@ -163,9 +158,9 @@ def runTimeIntegrationex4(n=10, k=10, eps=1e-3):
     
 
 
-def ex4():
+def ex4(n=10, k=10):
     epss = [1e-3, 1e-4]
-    resultsByEps = GetTimeIntegrationResults(epss=epss)
+    resultsByEps = GetTimeIntegrationResults(n=n, k=k, epss=epss)
     
     fig, axs = plt.subplots(1, 2)
     axs = axs.flatten()
@@ -174,12 +169,22 @@ def ex4():
     plt.tight_layout()
     plt.show()
     pass
+
+            
+            
+            
+    pass
+    
+    
+    
     
 # testLanczos()
 # testCay(m=7*1000, k=5*370)
 # testLanczos2(N=32, k=2, loop=False, orth=True)
 # testODEsolver(N=32, k=1)
 # testAnim()
-testTimeInt(n=10, k=10, TOL=1e-3, maxCuts=10, eps=1e-6)
+# testTimeInt(n=10, k=10, TOL=1e-2, maxCuts=10, eps=1e-3)
 # testBestSVD(M = 800, N = 1200, k=230)
-# ex4()
+# runTimeIntegrationex4(n=4, k=4)
+# CompareRankkApproximation(ns=[8])
+pass

@@ -4,7 +4,7 @@ from time import time
 norm = np.linalg.norm
 
 
-def bestApproxSVD(A, k):
+def bestApproxSVDRecon(A, k):
     U, S, Vh = np.linalg.svd(A)
     m, n = A.shape
     X = np.zeros((m, n))
@@ -13,12 +13,13 @@ def bestApproxSVD(A, k):
     Skdiag = np.diag(S[:k])
     X = U[:, :k]@Skdiag@(Vh[:k, :])
     return X
+
    
 def bestApproxOverTime(ts, A, k, verbose=0):
     tStart = time()
     Xs = []
     for t in ts:
-        X = bestApproxSVD(A(t), k) 
+        X = bestApproxSVDRecon(A(t), k) 
         Xs.append(X) 
     tend = time() - tStart
     if verbose: print(f"BestApproxSVD finished in {tend}s")
@@ -26,8 +27,8 @@ def bestApproxOverTime(ts, A, k, verbose=0):
 
 def lanczosSVD(A, k, b, orth=True):
     Pk, Qk, Bk = LanczosBidiag(A, k, b, orth=orth)
-    U, S, Vh = np.linalg.svd(Bk.toarray())
-    return U, np.diag(S), Vh
+    U, S, Vh = np.linalg.svd(Bk)
+    return U, S, Vh #endret til S fra np.diag(S)
 
 def LanczosOverTime(ts, A, k, b, orth=True, verbose = 0):
     tStart = time()
@@ -48,6 +49,7 @@ def LanczosBidiag(A, k, b, orth=True):
     Qk = v.T
     Bk = scsp.diags([alfa, beta[1:]], [0, -1]).toarray()
     return Pk, Qk, Bk
+
 
 
 def LanczosBidiagMain(A, k, b, orth):

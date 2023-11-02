@@ -1,6 +1,5 @@
 import numpy as np
 # import scipy.sparse as scsp
-from numba import jit
 from cayley import *
 from time import time
 
@@ -161,7 +160,7 @@ def linMatODEStep(Uj, Sj, Vj, dA, h, tj, cay):
     
     sigma = np.linalg.norm(Ujp1@Sjp1@(Vjp1.T) - Uest@Sest@(Vest.T))
     
-    dSj = (Uj.T)@dA(tj)@Vj
+    dSj = (Uj.T)@Q@Uj@Sj + Sj@(Vj.T)@R@Vj
     dUj = (FUj@(Uj.T)- Uj@(FUj.T))@Uj
     dVj = (FVj@(Vj.T)- Vj@(FVj.T))@Vj
     

@@ -83,7 +83,7 @@ def plotTimeIntegrationResults(ax, results, title):
     dYerr = results['dYerr']
     timesteps = results['timesteps']
     
-    ax.plot(timesteps, Werr, linestyle='-', label="$||W(t)-A(t)||$")
+    ax.plot(timesteps, Werr, linestyle='-', label="$||W_{\\perp}(t)-A(t)||$")
     ax.plot(timesteps, Xerr, linestyle='-', label="$||X(t)-A(t)||$")
     ax.plot(timesteps, Yerr, linestyle='-', label="$||Y(t)-A(t)||$")
     ax.plot(timesteps, XYerr, linestyle=':', label="$||X(t)-Y(t)||$")
@@ -92,6 +92,51 @@ def plotTimeIntegrationResults(ax, results, title):
     ax.legend()
     ax.set_xlabel(f"time [s]")
     ax.set_title(title)
+    
+def plotErrors(resultsByKByEps, ks, epss, ksToPlot, epssToPlot, res = 6):
+    fig = plt.figure(constrained_layout=True, figsize=(ksToPlot*res, epssToPlot*res))
+    fig.suptitle(f"Title")
+    subfigs = fig.subfigures(nrows=1, ncols=ksToPlot)
+    for row, subfig in enumerate(subfigs):
+        k = ks[row]
+        subfig.suptitle(f"k={k}", fontsize=14)
+        axs = subfig.subplots(nrows=epssToPlot, ncols=1)
+        for col, ax in enumerate(axs):
+            eps = epss[col]
+            plotTimeIntegrationResults(ax, resultsByKByEps[k][eps], f"$\epsilon$={eps}")
+    # plt.tight_layout()
+    plt.show()
+    
+def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
+                QOrthErr, nonPOrthErr, nonQOrthErr,
+                res=3):
+    fig, axs = plt.subplots(1, 3, figsize=(3*res, 1*res))
+    x = range(1,n+1)
+    axs[0].semilogy(x, singvals, '.')
+    axs[0].set_title(f"Singular values of ${n}\\times {n}$ test matrix")
+    axs[0].set_xlabel("Singular value #")
+    axs[0].grid()
+    
+    axs[1].plot(x, WErr, label=r"$||W_{\perp}-A||_F$")
+    axs[1].plot(x, WNerr, label=r"$||W-A||_F$")
+    axs[1].plot(x, bestAppErr, label=r"$||X-A||_F$")
+    axs[1].legend()
+    axs[1].set_title(f"Rank k approximation error")
+    axs[1].set_xlabel("k")
+    axs[1].grid()
+    
+    axs[2].plot(x, nonPOrthErr, label=r"$||P_k^T P_k - I||_F$")
+    axs[2].plot(x, nonQOrthErr, label=r"$||Q_k^T Q_k - I||_F$")
+    axs[2].plot(x, POrthErr, label=r"$||P_{\perp k}^T P_{\perp k} - I||_F$")
+    axs[2].plot(x, QOrthErr, label=r"$||Q_{\perp k}^T Q_{\perp k} - I||_F$")
+    axs[2].set_title(f"Non-orthogonality error for $P_k$ and $Q_k$")
+    axs[2].set_xlabel("k")
+    axs[2].legend()
+    axs[2].grid()
+    
+    plt.tight_layout()
+    plt.show()
+    
     
     
 
