@@ -137,6 +137,25 @@ def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
     plt.tight_layout()
     plt.show()
     
+def plotSVDComparison(Ylist, k, A, timesteps, skipparam=20):
+    ts = timesteps[::skipparam]
+    trueSing = np.zeros((k, len(ts)))
+    YSing = np.zeros((k, len(ts)))
+    for i, t in enumerate(ts):
+        At = A(t)
+        _, AS, _ = np.linalg.svd(At)
+        trueSing[:, i] = AS[:k]
+        j = timesteps.index(t)
+        Y = Ylist[j]
+        _, YS, _ = np.linalg.svd(Y)
+        YSing[:, i] = YS[:k]
+    for i in range(k):
+        plt.plot(ts, trueSing[i, :])
+        plt.plot(ts, YSing[i,:], 'o')
+    plt.title(f'Singular values, k={k}')
+    plt.xlabel("time [s]")
+    plt.show()
+    pass
     
     
 

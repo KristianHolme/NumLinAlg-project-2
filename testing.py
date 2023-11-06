@@ -169,14 +169,27 @@ def ex4(n=10, k=10):
     plt.tight_layout()
     plt.show()
     pass
-
-            
-            
-            
-    pass
     
     
-    
+def ex5():
+    ks = [100]
+    n= 10
+    eps = 0.1
+    for k in ks:
+        A, dA = makeAfuncs(n, eps=eps, cosMult=True)
+        # N = 99
+        t0 = 0
+        tf = 10
+        h0 = 0.01
+        A0 = A(t0)
+        U0, S0, V0 = getU0S0V0(A0, k)
+        
+        Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRun = TimeIntegration(
+            t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay1, verbose = 2,
+            TOL= 1e-2, maxTimeCuts=10)
+        Ylist = makeY(Ulist, Slist, Vlist)
+        plotSVDComparison(Ylist, k, A, timesteps, skipparam=10)
+        
     
 # testLanczos()
 # testCay(m=7*1000, k=5*370)
@@ -187,4 +200,5 @@ def ex4(n=10, k=10):
 # testBestSVD(M = 800, N = 1200, k=230)
 # runTimeIntegrationex4(n=4, k=4)
 # CompareRankkApproximation(ns=[8])
+ex5()
 pass
