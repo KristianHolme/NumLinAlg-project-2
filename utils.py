@@ -42,10 +42,31 @@ def getSol(u, t, m, n):
     s = fn(x[:, None], y[None, :])    
     return s
 
+def get_true_solutions(u, timesteps, m, n):
+    """
+    Generates a list of true solution matrices evaluated at given timesteps.
+
+    Parameters:
+    - u: The function that returns the true solution when passed (x, y, t).
+    - timesteps: A list or array of time values at which to evaluate the true solution.
+    - m: The number of points in the x-dimension.
+    - n: The number of points in the y-dimension.
+
+    Returns:
+    - A list of 2D numpy arrays containing the true solutions.
+    """
+    true_solutions = []
+
+    for t in timesteps:
+        true_solution_matrix = getSol(u, t, m, n)
+        true_solutions.append(true_solution_matrix)
+
+    return true_solutions
+
 def g(x, y):
     return np.sin(np.pi*x)*np.sin(2*np.pi*y)
 def u(x, y, t):
-    return np.exp(5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
+    return np.exp(-5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
 
 def makeAfuncs(n=10, eps=1e-3, cosMult=False):
     ones = np.ones(n**2 - 1)
@@ -200,4 +221,33 @@ def CompareRankkApproximation(ns = [10, 100, 1000], res=3):
         PlotSVDTest(n, singvals, WErr, WNErr, bestAppErr, POrthErr, QOrthErr,
                     nonPOrthErr, nonQOrthErr, res=res)
 
+def calculate_differences(approx_matrices, timesteps, u, m, n):
+    """
+    Given a list of approximated matrices and corresponding timesteps,
+    computes the list of matrices representing the difference from the true solution.
+
+    Parameters:
+    - approx_matrices: List of 2D numpy arrays representing the approximated solution.
+    - timesteps: List of times at which the approximated solutions are computed.
+    - u: Function that provides the exact solution when called with x, y, t.
+    - m: Number of points in the x dimension for the exact solution grid.
+    - n: Number of points in the y dimension for the exact solution grid.
+
+    Returns:
+    - List of 2D numpy arrays, each representing the difference between the
+      approximation and the true solution at a given timestep.
+    """
+
+    # Check for equal number of matrices and timesteps
+    if len(approx_matrices) != len(timesteps):
+        raise ValueError("Number of matrices and timesteps must match.")
+
+    differences = []
+    for i, approx_matrix in enumerate(approx_matrices):
+        t = timesteps[i]
+        true_matrix = getSol(u, t, m, n)
+        difference = approx_matrix - true_matrix
+        differences.append(difference)
+    
+    return differences
     

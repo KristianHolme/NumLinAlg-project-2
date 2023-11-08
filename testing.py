@@ -109,17 +109,26 @@ def testLanczos2(N=2, k=2, usejit=False, orth=True, verbose=True, loop=False):
 
 def testODEsolver(N = 32, k=1):
     t0 = 0
-    tf = 0.0101
-    h0 = 0.00001
+    tf = 0.2
+    h0 = 0.0005
     A0 = initval(g, N)
     U0, S0, V0 = getU0S0V0(A0, k)
+    TOL = 1e-5
+    maxcuts = 10
+    m = n = N+1
     
     Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRUn= TimeIntegration(t0, tf, h0, U0, S0, V0, 
                     diff, linMatODEStep, 
                     cay=cay1, verbose = 3,
-                    TOL= 1e-3, maxTimeCuts=3)
+                    TOL= TOL, maxTimeCuts=maxcuts)
     Ylist = makeY(Ulist, Slist, Vlist)
     plotRankApproxError(Ylist, u, timesteps, k)
+    animtime = 2
+    animate_matrices(Ylist, timesteps, animtime)
+    diffs = calculate_differences(Ylist, timesteps, u, m, n)
+    animate_matrices(diffs, timesteps, animtime)
+    truesol = get_true_solutions(u, timesteps, m, n)
+    animate_matrices(truesol, timesteps, animtime, updateCbar=False)
     pass
 
 def testAnim():
@@ -158,8 +167,6 @@ def runTimeIntegrationex4(n=10, k=10, eps=1e-3, cay=cay1):
     dYlist = makedY(Ulist, Slist, Vlist, dUlist, dSlist, dVlist)
     return Ylist, dYlist, timesteps, tRun
     
-
-
 def ex4(n=10, k=10):
     epss = [1e-3, 1e-4]
     resultsByEps = GetTimeIntegrationResults(n=n, k=k, epss=epss)
@@ -171,7 +178,6 @@ def ex4(n=10, k=10):
     plt.tight_layout()
     plt.show()
     pass
-    
     
 def ex5():
     ks = [100]
@@ -192,22 +198,31 @@ def ex5():
         Ylist = makeY(Ulist, Slist, Vlist)
         plotSVDComparison(Ylist, k, A, timesteps, skipparam=10)
         
-def testODEsolverSimple(N = 32, k=32):
+def testODEsolverSimple(N = 32, k=33):
     t0 = 0
     tf = 0.2
-    h0 = 0.001
+    h0 = 0.01
+    TOL = 1e-5
+    maxcuts = 10
+    m = n = N+1
     A = np.random.rand(N+1, N+1)
     A0 = np.random.rand(N+1, N+1)
-    f = lambda m, n, t: expm(A*t)@A0
-    df = lambda m, n: (A, 0*A)
+    f = lambda m, n, t: expm(-A*t)@A0
+    df = lambda m, n: (-A, 0*A)
     U0, S0, V0 = getU0S0V0(A0, k)
     
     Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRUn= TimeIntegration(t0, tf, h0, U0, S0, V0, 
                     df, linMatODEStep, 
                     cay=cay1, verbose = 3,
-                    TOL= 1e-3, maxTimeCuts=3)
+                    TOL= TOL, maxTimeCuts=maxcuts)
     Ylist = makeY(Ulist, Slist, Vlist)
     plotRankApproxError(Ylist, f, timesteps, k)
+    animtime = 2
+    animate_matrices(Ylist, timesteps, animtime)
+    diffs = calculate_differences(Ylist, timesteps, f, m, n)
+    animate_matrices(diffs, timesteps, animtime)
+    truesol = get_true_solutions(f, timesteps, m, n)
+    animate_matrices(truesol, timesteps, animtime, updateCbar=False)
     pass
 # testLanczos()
 # testCay(m=7*1000, k=5*370)
@@ -220,5 +235,5 @@ def testODEsolverSimple(N = 32, k=32):
 # CompareRankkApproximation(ns=[8])
 # ex5()
 # testODEsolverSimple()
-testODEsolver()
+testODEsolver(k = 1)
 pass
