@@ -5,6 +5,7 @@ from matplotlib.animation import FuncAnimation
 norm = np.linalg.norm
 
 def plotRankApproxError(Ylist, u, times, k, needGetSol=True):
+    from utils import getSol
     errors = np.zeros_like(times)
     m, n = (Ylist[0]).shape
     for i, t in enumerate(times):

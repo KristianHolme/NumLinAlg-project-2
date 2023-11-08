@@ -8,6 +8,8 @@ from timeIntegration import *
 from utils import *
 from plotting import *
 import matplotlib.pyplot as plt
+from scipy.linalg import expm
+
 norm = np.linalg.norm
 
 def plsgofast(func):
@@ -105,17 +107,17 @@ def testLanczos2(N=2, k=2, usejit=False, orth=True, verbose=True, loop=False):
 
 
 
-def testODEsolver(N = 32, k=2):
+def testODEsolver(N = 32, k=1):
     t0 = 0
-    tf = 0.2
-    h0 = 0.001
+    tf = 0.0101
+    h0 = 0.00001
     A0 = initval(g, N)
     U0, S0, V0 = getU0S0V0(A0, k)
     
     Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRUn= TimeIntegration(t0, tf, h0, U0, S0, V0, 
                     diff, linMatODEStep, 
                     cay=cay1, verbose = 3,
-                    TOL= 1e-0, maxTimeCuts=3)
+                    TOL= 1e-3, maxTimeCuts=3)
     Ylist = makeY(Ulist, Slist, Vlist)
     plotRankApproxError(Ylist, u, timesteps, k)
     pass
@@ -190,7 +192,23 @@ def ex5():
         Ylist = makeY(Ulist, Slist, Vlist)
         plotSVDComparison(Ylist, k, A, timesteps, skipparam=10)
         
+def testODEsolverSimple(N = 32, k=32):
+    t0 = 0
+    tf = 0.2
+    h0 = 0.001
+    A = np.random.rand(N+1, N+1)
+    A0 = np.random.rand(N+1, N+1)
+    f = lambda m, n, t: expm(A*t)@A0
+    df = lambda m, n: (A, 0*A)
+    U0, S0, V0 = getU0S0V0(A0, k)
     
+    Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRUn= TimeIntegration(t0, tf, h0, U0, S0, V0, 
+                    df, linMatODEStep, 
+                    cay=cay1, verbose = 3,
+                    TOL= 1e-3, maxTimeCuts=3)
+    Ylist = makeY(Ulist, Slist, Vlist)
+    plotRankApproxError(Ylist, f, timesteps, k)
+    pass
 # testLanczos()
 # testCay(m=7*1000, k=5*370)
 # testLanczos2(N=32, k=2, loop=False, orth=True)
@@ -200,5 +218,7 @@ def ex5():
 # testBestSVD(M = 800, N = 1200, k=230)
 # runTimeIntegrationex4(n=4, k=4)
 # CompareRankkApproximation(ns=[8])
-ex5()
+# ex5()
+# testODEsolverSimple()
+testODEsolver()
 pass

@@ -7,7 +7,6 @@ from heatequation import *
 from plotting import *
 from timeIntegration import *
 import pandas as pd
-from numba import jit
 norm = np.linalg.norm
 
 def getU0S0V0(A, k):
