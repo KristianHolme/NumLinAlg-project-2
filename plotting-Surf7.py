@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from utils import *
-from matplotlib.animation import FuncAnimation, PillowWriter
+from matplotlib.animation import FuncAnimation
 norm = np.linalg.norm
 
 def plotRankApproxError(Ylist, u, times, k, needGetSol=True):
@@ -62,22 +62,19 @@ def plotGrid2D(A, title=""):
     plt.title(title) if title else None
     plt.show()
     
-def animateMatrix(A, t0=0, tf=1, length=2, fps=60, name="animated_matrix"):
-    fig, ax = plt.subplots(figsize=(5,5))
-    plt.tight_layout()
+def animateMatrix(A):
+    fig, ax = plt.subplots()
     im = ax.imshow(A(0), animated=True, cmap='viridis')
-    ax.axis('off')
+
     # Update function for animation
     def update(frame):
         im.set_array(A(frame))
         return [im]
 
     # Create the animation
-    ani = FuncAnimation(fig, update, frames=np.linspace(t0, tf, length*fps), blit=True)
-    ani.save(name + ".gif", writer="Pillow", fps=fps)
-    # plt.show()
-    plt.close(fig)
-    return name + ".gif"
+    ani = FuncAnimation(fig, update, frames=np.linspace(0, 10, 100), blit=True)
+    ani.save("animated_matrix.gif", writer="imagemagick")
+    plt.show()
     
 def plotTimeIntegrationResults(ax, results, title):
     Werr = results['Werr']
@@ -145,7 +142,6 @@ def plotSVDComparison(Ylist, k, A, timesteps, skipparam=20):
     ts = timesteps[::skipparam]
     trueSing = np.zeros((k, len(ts)))
     YSing = np.zeros((k, len(ts)))
-    colors = iter(plt.cm.viridis(np.linspace(0, 1, k))) 
     for i, t in enumerate(ts):
         At = A(t)
         _, AS, _ = np.linalg.svd(At)
@@ -155,83 +151,15 @@ def plotSVDComparison(Ylist, k, A, timesteps, skipparam=20):
         _, YS, _ = np.linalg.svd(Y)
         YSing[:, i] = YS[:k]
     for i in range(k):
-        color = next(colors)
-        plt.plot(ts, trueSing[i, :], color=color, lw=0.2)
-        plt.plot(ts, YSing[i,:], 'o', color=color, lw=0.2)
+        plt.plot(ts, trueSing[i, :])
+        plt.plot(ts, YSing[i,:], 'o')
     plt.title(f'Singular values, k={k}')
     plt.xlabel("time [s]")
     plt.show()
     pass
     
-def animate_matrices(matrices, timesteps, total_anim_time, updateCbar = True):
-    """
-    Animates a list of matrices as images with a dynamic colorbar and a timestamp.
+    
 
-    Parameters:
-    - matrices: A list of 2D numpy arrays.
-    - timesteps: A list of time values corresponding to each matrix.
-    - total_anim_time: Total animation time in seconds.
-    """
-    
-    if not all(isinstance(matrix, np.ndarray) for matrix in matrices):
-        raise ValueError('All items in the list must be numpy arrays.')
-    if len(matrices) != len(timesteps):
-        raise ValueError('The length of timesteps must match the number of matrices.')
-
-    # Calculate the evenly distributed times for the animation frames
-    animation_times = np.linspace(timesteps[0], timesteps[-1], int(60 * total_anim_time))
-    
-    # Find the indices in `timesteps` that are closest to the target `animation_times`
-    indices_to_use = np.searchsorted(timesteps, animation_times)
-    indices_to_use = np.clip(indices_to_use, 0, len(timesteps) - 1)  # Ensure indices are within bounds
-    
-    # Calculate the interval
-    interval = (total_anim_time * 1000) / len(animation_times)
-
-    fig, ax = plt.subplots()
-    im = ax.imshow(matrices[0], animated=True)
-    cbar = plt.colorbar(im, ax=ax)
-    
-    time_text = ax.text(0.02, 0.95, '', transform=ax.transAxes, color='white')
-
-    def update_fig(frame_index):
-        # Use the precomputed index to ensure the frames are displayed at the correct time
-        idx = indices_to_use[frame_index]
-        data = matrices[idx]
-        im.set_array(data)
-        time_text.set_text(f'Time: {timesteps[idx]:.5f}/{timesteps[-1]:.5f}')
-        
-        # Update colorbar
-        if updateCbar:
-            im.set_clim(data.min(), data.max())
-            cbar.update_normal(im)
-        
-
-        return im, time_text
-
-    ani = FuncAnimation(fig, update_fig, frames=len(animation_times), interval=interval, blit=False)
-    plt.show()
-    return ani
-
-def plotCols(U, V, t, res=3):
-    fig, axs = plt.subplots(1, 2, figsize=(2*res, 2*res))
-    axs[0].imshow(U, aspect='auto')
-    axs[0].set_title(f"U")
-    axs[0].set_xticks([0], range(1, U.shape[1]+1))
-    axs[0].set_xlabel("i")
-    axs[0].set_yticks([])
-    
-    axs[1].imshow(V, aspect='auto')
-    axs[1].set_xticks([0], range(1, V.shape[1]+1))
-    axs[1].set_xlabel("i")
-    axs[1].set_yticks([])
-    axs[1].set_title(f"V")
-    
-    fig.suptitle(f"Columns of U and V at t:{t:.5f}")
-    
-    plt.tight_layout()
-    
-    pass
 """
 import matplotlib.pyplot as plt
 plotGrid2D(U0@S0@(V0.T))
