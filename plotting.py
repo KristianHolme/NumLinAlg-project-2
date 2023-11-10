@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from utils import *
 from matplotlib.animation import FuncAnimation, PillowWriter
+import matplotlib.lines as mlines
 norm = np.linalg.norm
 
 def plotRankApproxError(Ylist, u, times, k, needGetSol=True):
@@ -97,9 +98,9 @@ def plotTimeIntegrationResults(ax, results, title):
     ax.set_xlabel(f"time [s]")
     ax.set_title(title)
     
-def plotErrors(resultsByKByEps, ks, epss, ksToPlot, epssToPlot, res = 6):
+def plotErrors(resultsByKByEps, ks, epss, ksToPlot, epssToPlot, res = 6, title=''):
     fig = plt.figure(constrained_layout=True, figsize=(ksToPlot*res, epssToPlot*res))
-    fig.suptitle(f"Title")
+    fig.suptitle(title)
     subfigs = fig.subfigures(nrows=1, ncols=ksToPlot)
     for row, subfig in enumerate(subfigs):
         k = ks[row]
@@ -141,7 +142,8 @@ def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
     plt.tight_layout()
     plt.show()
     
-def plotSVDComparison(Ylist, k, A, timesteps, skipparam=20):
+def plotSVDComparison(Ylist, k, A, timesteps, numPoints=50):
+    skipparam = round(len(timesteps)/numPoints)
     ts = timesteps[::skipparam]
     trueSing = np.zeros((k, len(ts)))
     YSing = np.zeros((k, len(ts)))
@@ -156,8 +158,13 @@ def plotSVDComparison(Ylist, k, A, timesteps, skipparam=20):
         YSing[:, i] = YS[:k]
     for i in range(k):
         color = next(colors)
-        plt.plot(ts, trueSing[i, :], color=color, lw=0.2)
-        plt.plot(ts, YSing[i,:], 'o', color=color, lw=0.2)
+        plt.plot(ts, trueSing[i, :], color=color, lw=1)
+        plt.plot(ts, YSing[i,:], 'o', color=color, markersize=2)
+    
+    true_sv_legend = mlines.Line2D([], [], color='black', marker='_', markersize=10, label='True SV')
+    approx_sv_legend = mlines.Line2D([], [], color='black', marker='o',linestyle='None', markersize=4, label='Approx SV')
+    plt.legend(handles=[true_sv_legend, approx_sv_legend])
+     
     plt.title(f'Singular values, k={k}')
     plt.xlabel("time [s]")
     plt.show()

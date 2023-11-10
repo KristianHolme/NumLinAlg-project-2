@@ -26,8 +26,7 @@ def plsgofast(func):
 @plsgofast
 def runLanczos(M=2, N=2, k=2, usejit=True, orth=True, verbose=False):
     A = np.random.rand(M, N)
-    b = np.random.rand(M)
-    Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+    Pk, Qk, Bk = LanczosBidiag(A, k, usejit=usejit, orth=orth)
     Aprox = Pk@Bk@Qk.T
     err = np.linalg.norm(Aprox - A)
     if verbose:print(f"error:{err}")
@@ -35,7 +34,6 @@ def runLanczos(M=2, N=2, k=2, usejit=True, orth=True, verbose=False):
 def testBestSVD(M=2, N=2, k=2, verbose=1):
     t0 = time()
     A = np.random.rand(M, N)
-    b = np.random.rand(M)
     X = bestApproxSVDRecon(A, k)
     err = np.linalg.norm(X - A)
     tend = time() - t0
@@ -84,11 +82,10 @@ def testLanczos2(N=2, k=2, usejit=False, orth=True, verbose=True, loop=False):
     A = np.random.rand(N+1, N+1)
     A = initval(g, N)
     if verbose:print(f"Rank A:{np.linalg.matrix_rank(A)}")
-    b = np.random.rand(N+1)
     if loop:
         err = np.zeros(N+1)
         for k in range(1, N+1 +1):
-            Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+            Pk, Qk, Bk = LanczosBidiag(A, k, usejit=usejit, orth=orth)
             Aprox = Pk@Bk@Qk.T
             if verbose: print(f"k:{k}, approx rank:{np.linalg.matrix_rank(Aprox)}")
             err[k-1] = np.linalg.norm(Aprox - A)
@@ -97,7 +94,7 @@ def testLanczos2(N=2, k=2, usejit=False, orth=True, verbose=True, loop=False):
         plt.plot(err)
         plt.show()
     else:
-        Pk, Qk, Bk = LanczosBidiag(A, k, b, usejit=usejit, orth=orth)
+        Pk, Qk, Bk = LanczosBidiag(A, k, usejit=usejit, orth=orth)
         Aprox = Pk@Bk@Qk.T
         if verbose: print(f"k:{k}, approx rank:{np.linalg.matrix_rank(Aprox)}")
         err = np.linalg.norm(Aprox - A)
@@ -135,12 +132,12 @@ def testAnim():
     A, dA = makeAfuncs()
     animateMatrix(A)
     pass
-def testTimeInt(n = 10, k=10, eps=1e-3, TOL=1e-2, maxCuts=10):
-    A, dA = makeAfuncs(n, eps=eps)
+
+def testTimeInt(n = 10, k=10, eps=1e-3, TOL=1e-2, maxCuts=10, cosMult=False,
+                tf=1, h0=0.1):
+    A, dA = makeAfuncs(n, eps=eps, cosMult=cosMult)
     N = 99
     t0 = 0
-    tf = 1
-    h0 = 0.1
     A0 = A(t0)
     U0, S0, V0 = getU0S0V0(A0, k)
     
@@ -168,7 +165,7 @@ def runTimeIntegrationex4(n=10, k=10, eps=1e-3, cay=cay1):
     return Ylist, dYlist, timesteps, tRun
     
 def ex4(n=10, k=10):
-    epss = [1e-3, 1e-4]
+    epss = [1e-3, 1e-1]
     resultsByEps = GetTimeIntegrationResults(n=n, k=k, epss=epss)
     
     fig, axs = plt.subplots(1, 2)
@@ -179,10 +176,8 @@ def ex4(n=10, k=10):
     plt.show()
     pass
     
-def ex5():
-    ks = [5]
+def ex5(n=10, ks=[10], numPoints=30, TOL=1e-1, maxcuts=5, verbose=1, eps=1e-1):
     n= 10
-    eps = 1e-1
     for k in ks:
         A, dA = makeAfuncs(n, eps=eps, cosMult=True)
         # N = 99
@@ -193,10 +188,11 @@ def ex5():
         U0, S0, V0 = getU0S0V0(A0, k)
         
         Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRun = TimeIntegration(
-            t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay1, verbose = 2,
-            TOL= 1e-3, maxTimeCuts=10)
+            t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay1, verbose = verbose,
+            TOL= 1e-1, maxTimeCuts=maxcuts)
         Ylist = makeY(Ulist, Slist, Vlist)
-        plotSVDComparison(Ylist, k, A, timesteps, skipparam=10)
+        plotSVDComparison(Ylist, k, A, timesteps, numPoints=numPoints)
+        pass
         
 def testODEsolverSimple(N = 32, k=33):
     t0 = 0
@@ -229,12 +225,14 @@ def testODEsolverSimple(N = 32, k=33):
 # testLanczos2(N=32, k=2, loop=False, orth=True)
 # testODEsolver(N=32, k=1)
 # testAnim()
-L = 8
+L = 5
 # testTimeInt(n=L, k=L**2, TOL=1e-2, maxCuts=10, eps=1e-3)
 # testBestSVD(M = 800, N = 1200, k=230)
 # runTimeIntegrationex4(n=4, k=4)
 # CompareRankkApproximation(ns=[8])
-ex5()
-# testODEsolverSimple()
+ex5(n=4, ks=[5])
+# testODEsolv[erSimple()
 # testODEsolver(k = 1)
+# testTimeInt(n=10, k=10, eps=1e-1, TOL=1e-1, maxCuts=3, cosMult=True, tf=10, h0=0.1)
+# ex4(k=10)
 pass

@@ -25,25 +25,36 @@ def bestApproxOverTime(ts, A, k, verbose=0):
     if verbose: print(f"BestApproxSVD finished in {tend}s")
     return Xs, tend
 
-def lanczosSVD(A, k, b, orth=True):
-    Pk, Qk, Bk = LanczosBidiag(A, k, b, orth=orth)
+def lanczosSVD(A, k, orth=True):
+    Pk, Qk, Bk = LanczosBidiag(A, k, orth=orth)
     U, S, Vh = np.linalg.svd(Bk)
     return U, S, Vh #endret til S fra np.diag(S)
 
-def LanczosOverTime(ts, A, k, b, orth=True, verbose = 0):
+def LanczosOverTime(ts, A, k, orth=True, verbose = 0):
     tStart = time()
     W = []
+    debug=True
     for t in ts:
-        Pk, Qk, Bk = LanczosBidiag(A(t), k, b, orth=orth)
-
+        At = A(t)
+        Pk, Qk, Bk = LanczosBidiag(At, k, orth=orth)
         Aprox = Pk@Bk@(Qk.T)
+        if debug:
+            _, S, _ = np.linalg.svd(At)
+            _, SBk, _ = np.linalg.svd(Bk)
+            import matplotlib.pyplot as plt
+            plt.clf()
+            plt.plot(range(1, 21), S[:20], label='true')
+            plt.plot(range(1, k+1), SBk, label='lanczos')
+            plt.legend()
+            plt.show()
+            pass
         W.append(Aprox)
     tend = time() - tStart
     if verbose: print(f"Lanczos approx. Finished in {tend}s")
     return W, tend
      
-def LanczosBidiag(A, k, b, orth=True):
-    u, v, alfa, beta = LanczosBidiagMain(A, k, b, orth)
+def LanczosBidiag(A, k, orth=True):
+    u, v, alfa, beta = LanczosBidiagMain(A, k, orth)
 
     Pk = u.T
     Qk = v.T
@@ -52,12 +63,17 @@ def LanczosBidiag(A, k, b, orth=True):
 
 
 
-def LanczosBidiagMain(A, k, b, orth):
+def LanczosBidiagMain(A, k, orth):
     m, n = A.shape
     v = np.zeros((k, n)) #row k is vk
     u = np.zeros((k, m))
     alfa = np.zeros(k)
     beta = np.zeros(k)
+    
+    # b = np.random.rand(m) #random start point
+    # b=A[:,0]
+    b=A[:, np.argmax(np.linalg.norm(A, axis=0))] # start with the largest norm col in A
+    
     beta[0] = norm(b)
     u[0] = b/beta[0]
     ATu = A.T@u[0]

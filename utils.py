@@ -84,8 +84,8 @@ def makeAfuncs(n=10, eps=1e-3, cosMult=False):
     A2[0:n, 0:n] = Ipert
     
     I = np.identity(n**2)
-    def Q1(t): return expm(T1*t)@I
-    def Q2(t): return expm(T2*t)@I
+    def Q1(t): return expm(T1*t)
+    def Q2(t): return expm(T2*t)
     def dQ1(t): return T1@(Q1(t))
     def dQ2(t): return T2@(Q2(t))
     
@@ -149,8 +149,7 @@ def GetTimeIntegrationResults(n=10, k=10, verbose=1, epss=[1e-3],
         
         ts = timesteps
         # ts = np.arange(t0, tf, h0)
-        b = np.random.rand(A0.shape[0])
-        W, Wtime = LanczosOverTime(ts, A, k, b, verbose=verbose)
+        W, Wtime = LanczosOverTime(ts, A, k, verbose=verbose)
         X, Xtime = bestApproxOverTime(ts, A, k, verbose=verbose)
         
         err = lambda f, H, tlist: [  norm(f(t)-H[i]) for i, t in enumerate(tlist)]
@@ -195,7 +194,6 @@ def CompareRankkApproximation(ns = [10, 100, 1000], res=3):
     for n in ns:
         k = n
         A = np.random.rand(n, n)
-        b = np.random.rand(n)
         _, singvals, _ = np.linalg.svd(A)
         WErr = np.zeros(n)
         WNErr = np.zeros(n)
@@ -206,9 +204,9 @@ def CompareRankkApproximation(ns = [10, 100, 1000], res=3):
         nonQOrthErr = np.zeros(n)
         for k in range(1, n+1):
             I = np.identity(k)
-            PkOrth, QkOrth, BkOrth= LanczosBidiag(A, k, b, orth=True)
+            PkOrth, QkOrth, BkOrth= LanczosBidiag(A, k, orth=True)
             Worth = PkOrth@BkOrth@(QkOrth.T)
-            PkNonOrth, QkNonOrth, BkNonOrth = LanczosBidiag(A, k, b, orth=False)
+            PkNonOrth, QkNonOrth, BkNonOrth = LanczosBidiag(A, k, orth=False)
             WNonOrth = PkNonOrth@BkNonOrth@(QkNonOrth.T)
             X = bestApproxSVDRecon(A, k)
             WErr[k-1] = norm(Worth - A)
@@ -251,4 +249,21 @@ def calculate_differences(approx_matrices, timesteps, u, m, n):
         differences.append(difference)
     
     return differences
+
+def RunSVComparison(n=10, ks=[10], numPoints=30, TOL=1e-1, maxcuts=5, verbose=1,
+                    eps=1e-1, cosMult=True, tf=10):
+    from plotting import plotSVDComparison
+    for k in ks:
+        A, dA = makeAfuncs(n, eps=eps, cosMult=cosMult)
+        # N = 99
+        t0 = 0
+        h0 = 0.1
+        A0 = A(t0)
+        U0, S0, V0 = getU0S0V0(A0, k)
+        
+        Ulist, Slist, Vlist, timesteps, dUlist, dSlist, dVlist, tRun = TimeIntegration(
+            t0, tf, h0, U0, S0, V0, dA, USVstep, cay=cay1, verbose = verbose,
+            TOL= TOL, maxTimeCuts=maxcuts)
+        Ylist = makeY(Ulist, Slist, Vlist)
+        plotSVDComparison(Ylist, k, A, timesteps, numPoints=numPoints)
     
