@@ -50,22 +50,23 @@ def testLanczos(N=5, k=3, orth=True):
     #test with jit
     runLanczos(M=1500, N=2000, k=400, orth=orth)
 
-def testCay(m=2, k=2):
-  # Generate a random m x (m+k) matrix
+def testCay(m=5, k=2):
+    # k must be under half of m
+    # Generate a random m x (m+k) matrix
     A = np.random.rand(m, m+k)
 
     # Perform QR factorization to get an orthogonal matrix Q
-    Q, _ = np.linalg.qr(A)
+    Q, _ = np.linalg.qr(A, mode='complete')
 
     # Partition Q into F and U
     F = Q[:, :k]
     U = Q[:, k:2*k]
     I = np.identity(k)
     # Verify that U^T U = I and F^T U = 0
-    print("U^T U - I norm=")
-    print(np.linalg.norm((U.T @ U)-I))
-    print("F^T U norm:")
-    print(np.linalg.norm(F.T @ U))
+    # print("U^T U - I norm=")
+    # print(np.linalg.norm((U.T @ U)-I))
+    # print("F^T U norm:")
+    # print(np.linalg.norm(F.T @ U))
     
     CDir = cayDirect(U, F, verbose=True)
     C1 = cay1(U, F, verbose=True)
@@ -221,7 +222,7 @@ def testODEsolverSimple(N = 32, k=33):
     animate_matrices(truesol, timesteps, animtime, updateCbar=False)
     pass
 # testLanczos()
-# testCay(m=7*1000, k=5*370)
+# testCay(m=30*100, k=29*37)
 # testLanczos2(N=32, k=2, loop=False, orth=True)
 # testODEsolver(N=32, k=1)
 # testAnim()
@@ -230,9 +231,15 @@ L = 5
 # testBestSVD(M = 800, N = 1200, k=230)
 # runTimeIntegrationex4(n=4, k=4)
 # CompareRankkApproximation(ns=[8])
-ex5(n=4, ks=[5])
+# ex5(n=4, ks=[5])
 # testODEsolv[erSimple()
 # testODEsolver(k = 1)
 # testTimeInt(n=10, k=10, eps=1e-1, TOL=1e-1, maxCuts=3, cosMult=True, tf=10, h0=0.1)
 # ex4(k=10)
+# ks = [2**n for n in range(5, 10 + 1)]
+# dirtime, C1time, CQRtime, C1err, CQRerr = runCay(ks)
+# plotCayComp(dirtime, C1time, CQRtime, ks)
+ks = list(range(3, 110, 10))
+dirtime, C1time, CQRtime, C1err, CQRerr = runCay(ks)
+plotCayComp(dirtime, C1time, CQRtime, ks)
 pass

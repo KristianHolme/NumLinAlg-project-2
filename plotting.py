@@ -239,9 +239,14 @@ def plotCols(U, V, t, res=3):
     plt.tight_layout()
     
     pass
-"""
-import matplotlib.pyplot as plt
-plotGrid2D(U0@S0@(V0.T))
-C
-"""
-    
+
+def plotCayComp(dirtime, C1time, CQRtime, ks):
+    plt.plot(ks, dirtime, label="Direct")
+    plt.plot(ks, C1time, label="Method 2")
+    plt.plot(ks, CQRtime, label="QR method")
+    plt.grid()
+    plt.legend()
+    plt.xlabel("k")
+    plt.ylabel("time [s]")
+    plt.title("Cayley map computation time")
+    plt.show() 

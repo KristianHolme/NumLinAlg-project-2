@@ -7,6 +7,7 @@ from heatequation import *
 from plotting import *
 from timeIntegration import *
 import pandas as pd
+from cayley import *
 norm = np.linalg.norm
 
 def getU0S0V0(A, k):
@@ -42,23 +43,55 @@ def getSol(u, t, m, n):
     s = fn(x[:, None], y[None, :])    
     return s
 
+def runCay(ks, average=False):
+    ms = [3*k for k in ks]
+    l = len(ks)    
+    dirtime = np.zeros(l)
+    c1time = np.zeros(l)
+    cqrtime = np.zeros(l)
+    if average:
+        r = 200
+    else:
+        r = 1
+    for i, k in enumerate(ks):
+        for j in range(1, r+1):
+    
+            m = ms[i]
+            A = np.random.rand(m, m+k)
+
+            # perform qr factorization to get an orthogonal matrix q
+            Q, _ = np.linalg.qr(A, mode='complete')
+            F = Q[:, :k]
+            U = Q[:, k:2*k]
+            t0 = time()
+            cdir = cayDirect(U, F, verbose=False)
+            t1 = time()
+            dirtime[i] += (t1 - t0)/r
+            c1 = cay1(U, F, verbose=False)
+            t2 = time()
+            c1time[i] += (t2-t1)/r
+            cqr = cayQR(U, F, verbose=False)
+            cqrtime[i] += (time() - t2)/r
+    return dirtime, c1time, cqrtime
+        
+
 def get_true_solutions(u, timesteps, m, n):
     """
-    Generates a list of true solution matrices evaluated at given timesteps.
+    generates a list of true solution matrices evaluated at given timesteps.
 
-    Parameters:
-    - u: The function that returns the true solution when passed (x, y, t).
-    - timesteps: A list or array of time values at which to evaluate the true solution.
-    - m: The number of points in the x-dimension.
-    - n: The number of points in the y-dimension.
+    parameters:
+    - u: the function that returns the true solution when passed (x, y, t).
+    - timesteps: a list or array of time values at which to evaluate the true solution.
+    - m: the number of points in the x-dimension.
+    - n: the number of points in the y-dimension.
 
-    Returns:
-    - A list of 2D numpy arrays containing the true solutions.
+    returns:
+    - a list of 2d numpy arrays containing the true solutions.
     """
     true_solutions = []
 
     for t in timesteps:
-        true_solution_matrix = getSol(u, t, m, n)
+        true_solution_matrix = getsol(u, t, m, n)
         true_solutions.append(true_solution_matrix)
 
     return true_solutions
