@@ -2,6 +2,9 @@ import numpy as np
 from time import time
 
 def cayDirect(U, F, verbose=False):
+    """
+    Computes the cayley transformation for a matrix $B=CD^T, C = [F, -U], D=[U, F]$ directly
+    """
     t0 = time()
     C = np.block([F, -U])
     D = np.block([U, F])
@@ -20,6 +23,10 @@ def cayDirect(U, F, verbose=False):
 
 
 def cay1(U, F, verbose = False):
+    """
+    Computes the cayley transformation for a matrix $B=CD^T, C = [F, -U], D=[U, F]$
+    using the formula cay(B) =  I + C (I-0.5D^TC)^{-1}D^T
+    """
     t0 = time()
     m, k = U.shape
     C = np.block([F, -U])
@@ -38,6 +45,15 @@ def cay1(U, F, verbose = False):
     return cay
 
 def cayQR(U, F, verbose = False, customInvert=True):
+    """
+    Computes the cayley transformation for a matrix $B=CD^T, C = [F, -U], D=[U, F]$
+    using the formula cay(B) = I + [U, U^T]G[U, U^T]^T, wheere G is based on the QR factorization of D
+    
+    Args:
+    U, F (numpy arrays): Matrices making up B
+    verbose (int/bool): level of info to be printed out
+    customInvert (bool): use a custom block-based inversion scheme to do the necessary inversion
+    """
     t0 = time()
     m, k = U.shape
     assert  U.shape == F.shape

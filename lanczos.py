@@ -5,6 +5,16 @@ norm = np.linalg.norm
 
 
 def bestApproxSVDRecon(A, k):
+    """Best rank k approximation of matrix A
+    
+    Truncated SVD of A.
+    
+    Args:
+    A (nuomy array): matrix to be approximated
+    k (int): rank of approximation
+    
+    Returns
+    X (numpy array): rank k approximation"""
     U, S, Vh = np.linalg.svd(A)
     m, n = A.shape
     X = np.zeros((m, n))
@@ -16,24 +26,59 @@ def bestApproxSVDRecon(A, k):
 
    
 def bestApproxOverTime(ts, A, k, verbose=0):
+    """Computes rank k best approximation at various time steps
+    
+    Args:
+    ts (list): list of timesteps
+    A (funtion): function of time that returns approximand matrix
+    k (int): rank of approximation
+    verbose (int/bool): info level printed
+    
+    Returns:
+    Xs (list): list of numpy arrays containing the best approx. at timesteps ts
+    tTot (float): total time used
+    """
     tStart = time()
     Xs = []
     for t in ts:
         X = bestApproxSVDRecon(A(t), k) 
         Xs.append(X) 
-    tend = time() - tStart
-    if verbose: print(f"BestApproxSVD finished in {tend}s")
-    return Xs, tend
+    tTot = time() - tStart
+    if verbose: print(f"BestApproxSVD finished in {tTot}s")
+    return Xs, tTot
 
 def lanczosSVD(A, k, orth=True):
+    """Computes SVD of B from Lanczos alg
+    
+    Args:
+    A (numpy array): approximand
+    k (int): rank of aproximation
+    orth (bool): to use reorthogonalization or not
+    
+    Returns:
+    U, S, Vh (numpy arrays): SVD decomp of Bk
+    """
     Pk, Qk, Bk = LanczosBidiag(A, k, orth=orth)
     U, S, Vh = np.linalg.svd(Bk)
     return U, S, Vh #endret til S fra np.diag(S)
 
 def LanczosOverTime(ts, A, k, orth=True, verbose = 0):
+    """Computes rank k Lanczos approximation at various time steps
+    
+    Args:
+    ts (list): list of timesteps
+    A (funtion): function of time that returns approximand matrix
+    k (int): rank of approximation
+    orth (bool): to use reorthogonalization or not
+    verbose (int/bool): info level printed
+    
+    Returns:
+    W (list): list of numpy arrays containing the approx. at timesteps ts
+    tTot (float): total time used
+    """
     tStart = time()
     W = []
-    debug=True
+    debug=False
     for t in ts:
         At = A(t)
         Pk, Qk, Bk = LanczosBidiag(At, k, orth=orth)
@@ -49,11 +94,21 @@ def LanczosOverTime(ts, A, k, orth=True, verbose = 0):
             plt.show()
             pass
         W.append(Aprox)
-    tend = time() - tStart
-    if verbose: print(f"Lanczos approx. Finished in {tend}s")
-    return W, tend
+    tTot = time() - tStart
+    if verbose: print(f"Lanczos approx. Finished in {tTot}s")
+    return W, tTot
      
 def LanczosBidiag(A, k, orth=True):
+    """ Computes rank k Lanczos aproximation of A
+    
+    Args:
+    A (funtion): function of time that returns approximand matrix
+    k (int): rank of approximation
+    orth (bool): to use reorthogonalization or not
+    
+    Returns:
+    Pk, Qk, Bk (numpy arrays): Lanczos approximation matrices
+    """
     u, v, alfa, beta = LanczosBidiagMain(A, k, orth)
 
     Pk = u.T
@@ -64,6 +119,20 @@ def LanczosBidiag(A, k, orth=True):
 
 
 def LanczosBidiagMain(A, k, orth):
+    """Main computation for Lanczos
+    
+    Args:
+    Args:
+    A (funtion): function of time that returns approximand matrix
+    k (int): rank of approximation
+    orth (bool): to use reorthogonalization or not
+    
+    Returns:
+    u (numpy array): left vectors
+    v (numpy arrays); right vectors
+    alfa (numpy array): diag of B
+    beta (numpy array): off-diag of B
+    """
     m, n = A.shape
     v = np.zeros((k, n)) #row k is vk
     u = np.zeros((k, m))

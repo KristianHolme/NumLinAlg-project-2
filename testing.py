@@ -167,12 +167,12 @@ def runTimeIntegrationex4(n=10, k=10, eps=1e-3, cay=cay1):
     
 def ex4(n=10, k=10):
     epss = [1e-3, 1e-1]
-    resultsByEps = GetTimeIntegrationResults(n=n, k=k, epss=epss)
+    resultsByEps = GetResults(n=n, k=k, epss=epss)
     
     fig, axs = plt.subplots(1, 2)
     axs = axs.flatten()
     for i, eps in enumerate(epss):
-        plotTimeIntegrationResults(axs[i], resultsByEps[eps], f"$\epsilon$={eps}")
+        plotErrorsToAx(axs[i], resultsByEps[eps], f"$\epsilon$={eps}")
     plt.tight_layout()
     plt.show()
     pass

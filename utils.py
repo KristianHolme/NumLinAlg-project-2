@@ -11,6 +11,16 @@ from cayley import *
 norm = np.linalg.norm
 
 def getU0S0V0(A, k):
+    """ Computes Initial values of U, S and V for time integration
+    Computes the initial values using a best approximation SVD of the initial value of the approximand A
+    
+    Args:
+    A (numpy array): A(0) when A(t) is the approximand for the dynamic approximation
+    k (int): rank of approximation
+    
+    returns:
+    U, S, V (numpy array): Matrices such that USV^T is the best rank k approximation of A
+    """
     U, S, Vh = np.linalg.svd(A)
     U = U[:,:k]
     S = np.diag(S)[:k, :k]
@@ -18,13 +28,35 @@ def getU0S0V0(A, k):
     return U, S, V
 
 def makeY(U, S, V):
+    """Assembles U, S V into Y
+    Computes Y = USV^T 
+    
+    Args:
+    U, S, V ((lists of) numpy arrays)
+    
+    Returns:
+    Y ((list of) numpy array(s))
+    
+    """
     if type(U) is list:
         Ylist = [U@S@(V.T) for U, S, V in zip(U, S, V)]
         return Ylist
     else:
         Y = U@S@(V.T)
         return Y
+
 def makedY(U, S, V, dU, dS, dV):
+    """Computes the derivative of Y
+    Assembles U, S V and their derivatives into the derivative of Y
+    
+    Args:
+    U, S, V ((lists of) numpy arrays)
+    dU, dS, dV ((lists of) numpy arrays)
+    
+    Returns:
+    dY ((list of) numpy array(s))
+    
+    """
     assert len(U) == (len(dU)+1)
     if type(dU) is list:
         dYlist = [dU@S@(V.T) + U@dS@(V.T) + U@S@(dV.T) for U, S, V, dU, dS, dV in zip(U, S, V, dU, dS, dV)]
@@ -34,6 +66,16 @@ def makedY(U, S, V, dU, dS, dV):
         return dY
 
 def getSol(u, t, m, n):
+    """Evaluate the function u(x, y, t) at time t on [0,1]x[0,1]
+    
+    Args: 
+    u (function: args: x, y, t):
+    t (float): time at which to evaluate u
+    m, n (int): dimensions of matrix
+    
+    Returns
+    S (numpy array: matrix evaluation of u)
+    """
     #eval function u(x,y,t) as matrix at time t
     def fn(x, y):
         return u(x, y, t)
@@ -44,6 +86,22 @@ def getSol(u, t, m, n):
     return s
 
 def runCay(ks, average=False):
+    """
+    Run three different algorithms for computing the cayley map, and collects
+    runtimes
+    
+    Args:
+    ks: (list of ints) the random matrices U, F used for computation are
+    3k x k matrices
+    average (bool): if true runs the computations 200 times to get a representative average. Use when k is low.
+    
+    Returns:
+    dirtime (numpy array): direct alg computation times for each value of k
+    c1time (numpy array): method 2 alg computation times for each value of k
+    cqrtime (numpy array): QR alg computation times for each value of k
+    """
+    
+    
     ms = [3*k for k in ks]
     l = len(ks)    
     dirtime = np.zeros(l)
@@ -74,34 +132,48 @@ def runCay(ks, average=False):
             cqrtime[i] += (time() - t2)/r
     return dirtime, c1time, cqrtime
         
-
 def get_true_solutions(u, timesteps, m, n):
     """
     generates a list of true solution matrices evaluated at given timesteps.
 
-    parameters:
-    - u: the function that returns the true solution when passed (x, y, t).
-    - timesteps: a list or array of time values at which to evaluate the true solution.
-    - m: the number of points in the x-dimension.
-    - n: the number of points in the y-dimension.
+    Args:
+    u (function): the function that returns the true solution when passed (x, y, t).
+    timesteps (list): a list or array of time values at which to evaluate the true solution.
+    m (int): the number of points in the x-dimension.
+    n (int): the number of points in the y-dimension.
 
     returns:
-    - a list of 2d numpy arrays containing the true solutions.
+    true_solutinos (list of numpy arrays) the true solutions.
     """
     true_solutions = []
 
     for t in timesteps:
-        true_solution_matrix = getsol(u, t, m, n)
+        true_solution_matrix = getSol(u, t, m, n)
         true_solutions.append(true_solution_matrix)
 
     return true_solutions
 
 def g(x, y):
+    """Initial value for the heat equation problem"""
     return np.sin(np.pi*x)*np.sin(2*np.pi*y)
+
 def u(x, y, t):
+    """Exact solution for the hat equation problem"""
     return np.exp(-5*np.pi**2*t)*np.sin(np.pi*x)*np.sin(2*np.pi*y)
 
 def makeAfuncs(n=10, eps=1e-3, cosMult=False):
+    """ Computes A and its derivative for dynamic approximation
+    Builds A as described in the project desription and in the paper by Koch and Lubich
+    
+    Args:
+    n (int): A will be a n^2 x n^2 matrix
+    eps (float): noise parameter
+    cosMult (bool): if True, will compute A and the derivative with cos(t) in place of e^t
+    
+    Returns:
+    A (function: arg: (t)) function that evaluates A at time given time, as n^2 x n^2 numpy array
+    dA (function: arg: (t)) function that evaluates the derivative of A at time given time, as n^2 x n^2 numpy array
+    """
     ones = np.ones(n**2 - 1)
     T1 = diags([ones, -1*ones], [-1, 1]).toarray()
     T2 = diags([ones[1:], 0.5*ones, -0.5*ones, -1*ones[1:]], [-2, -1, 1, 2]).toarray()
@@ -162,9 +234,28 @@ def makeAfuncs(n=10, eps=1e-3, cosMult=False):
             # Q1(t)@( np.exp(t)*A2@(Q2(t).T) + (A1 + np.exp(t)*A2)@(dQ2(t).T) ) )
         return A, dA
     
-def GetTimeIntegrationResults(n=10, k=10, verbose=1, epss=[1e-3],
+def GetResults(n=10, k=10, verbose=1, epss=[1e-3],
                               cay=cay1, h0=0.01, TOL=1e-3, maxTimeCuts=10,
                               t0=0, tf=1, cosMult=False):
+    """Runs dynamic-, Lanczos- and best approximation algorithms and compiles results and errors
+    
+    Args:
+    n (int): square root of problem size
+    k (int): rank of approximations
+    verbose (int/bool) level of information displayed
+    epss (list) list of different epsilons used to create A and dA
+    cay (function): function that computes the cayley transformation from matries U and F
+    h0 (float): initial step length target
+    TOL (float): tolerance for time step control
+    maxTimeCuts (int): maximum number of allowed time step cuts in the dynamic algorithm
+    t0 (float): starting time
+    tf (float): end time
+    cosMult (bool): True if we want cosine version of A
+    
+    Returns:
+    resultsByEps (dict): dictionary of dictionaries (one for each epsilon) 
+    containing errors, runtimes and timesteps for dynamic approximation
+    """
     # epss = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
     resultsByEps = {}
     for i, eps in enumerate(epss):
@@ -200,6 +291,14 @@ def GetTimeIntegrationResults(n=10, k=10, verbose=1, epss=[1e-3],
     return resultsByEps
     
 def makeTables(resultsByKByEps):
+    """Make tables of errors
+    
+    Args:
+    resultsByKByeps (dict): dict of results from GetResults, one result dict for each k value desired
+    
+    Returns:
+    tables_by_k (dict: int -> pandas dataframe) a pandas dataframe of epsilons and errors for each k
+    """
     tables_by_k = {}
     errorNames = [r"$||W(t)-A(t)||$",r"$||X(t)-A(t)||$",r"$||Y(t)-A(t)||$", r"$||X(t)-Y(t)||$", r"$||\dot{Y}(t)-\dot{A}(t)||$"]
     errorKeys = ['Werr', 'Xerr', 'Yerr', 'XYerr', 'dYerr']
@@ -223,6 +322,15 @@ def makeTables(resultsByKByEps):
     return tables_by_k
     
 def CompareRankkApproximation(ns = [10, 100, 1000], res=3):
+    """Compare Lanczos with and without reorth. and the best approximation
+    
+    Runs computations and plots singular values for the random approximand A, 
+    approximation errors and orthogonality errors.
+    
+    Args:
+    ns (list): list of different values of matrix sizes n to approximate
+    res (float): resolution for plotting
+    """
     from plotting import PlotSVDTest
     for n in ns:
         k = n
@@ -259,11 +367,11 @@ def calculate_differences(approx_matrices, timesteps, u, m, n):
     computes the list of matrices representing the difference from the true solution.
 
     Parameters:
-    - approx_matrices: List of 2D numpy arrays representing the approximated solution.
-    - timesteps: List of times at which the approximated solutions are computed.
-    - u: Function that provides the exact solution when called with x, y, t.
-    - m: Number of points in the x dimension for the exact solution grid.
-    - n: Number of points in the y dimension for the exact solution grid.
+    approx_matrices: List of 2D numpy arrays representing the approximated solution.
+    timesteps: List of times at which the approximated solutions are computed.
+    u: Function that provides the exact solution when called with x, y, t.
+    m: Number of points in the x dimension for the exact solution grid.
+    n: Number of points in the y dimension for the exact solution grid.
 
     Returns:
     - List of 2D numpy arrays, each representing the difference between the
@@ -285,6 +393,21 @@ def calculate_differences(approx_matrices, timesteps, u, m, n):
 
 def RunSVComparison(n=10, ks=[10], numPoints=30, TOL=1e-1, maxcuts=5, verbose=1,
                     eps=1e-1, cosMult=True, tf=10):
+    """
+    Runs dynamic approximation, calculates the singular values of the approximatino and plots the 
+    approximated singular values against the true singular values.
+    
+    Args: 
+    n (int): square root of matrix size
+    ks (list): different values of k(approximation rank)
+    numPoints (int): number of timepoints to plot the SV's
+    TOL (float):, tolerance for time step control
+    maxcuts (int): maximum number of timestep cuts in time step control
+    verbose (int/bool): level of info printed
+    eps (float): parameter for constructing A and dA
+    cosMult (bool): wheter or not to make the cosine version of A and dA
+    tf (float): end time
+    """
     from plotting import plotSVDComparison
     for k in ks:
         A, dA = makeAfuncs(n, eps=eps, cosMult=cosMult)

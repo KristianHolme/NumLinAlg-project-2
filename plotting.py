@@ -6,6 +6,15 @@ import matplotlib.lines as mlines
 norm = np.linalg.norm
 
 def plotRankApproxError(Ylist, u, times, k, needGetSol=True):
+    """Plots rank k approximation error
+    
+    Args:
+    Ylist (list): list of approximations
+    u (function): function for known solution
+    times (list): list of timesteps
+    k (int): rank of approximation
+    needGetSol (bool): if we need to call getSol to get the solution, or from u directly
+    """
     from utils import getSol
     errors = np.zeros_like(times)
     m, n = (Ylist[0]).shape
@@ -64,6 +73,19 @@ def plotGrid2D(A, title=""):
     plt.show()
     
 def animateMatrix(A, t0=0, tf=1, length=2, fps=60, name="animated_matrix"):
+    """Creates and saves animation of Functino A as .gif
+    
+    Args:
+    A (function): function of time
+    t0 (float): start time
+    tf (float): end time
+    lengt (float): play time of animatino [s]
+    fps (int): fps of animation
+    name (string): filename of animation
+    
+    Returns:
+    full file name of matrix, including suffix
+    """
     fig, ax = plt.subplots(figsize=(5,5))
     plt.tight_layout()
     im = ax.imshow(A(0), animated=True, cmap='viridis')
@@ -80,7 +102,14 @@ def animateMatrix(A, t0=0, tf=1, length=2, fps=60, name="animated_matrix"):
     plt.close(fig)
     return name + ".gif"
     
-def plotTimeIntegrationResults(ax, results, title):
+def plotErrorsToAx(ax, results, title):
+    """Plots results to ax
+    
+    Args: 
+    ax (matplotlib axes): axes to plot to
+    results (dict): results dict
+    title (string): title of plot
+    """
     Werr = results['Werr']
     Xerr = results['Xerr']
     XYerr = results['XYerr']
@@ -99,6 +128,17 @@ def plotTimeIntegrationResults(ax, results, title):
     ax.set_title(title)
     
 def plotErrors(resultsByKByEps, ks, epss, ksToPlot, epssToPlot, res = 6, title=''):
+    """Plots low rank approximatino errors
+    
+    Args:
+    resultsByKByEps (dict): results
+    ks (list): list if k values
+    epss (list): list of epsilon values
+    ksToPlot (int): number of k values for which we want to plot
+    epssToPlot (int): number of epsilon values for which we want to plot
+    res (float): plot resolution
+    title (string): plot title
+    """
     fig = plt.figure(constrained_layout=True, figsize=(ksToPlot*res, epssToPlot*res))
     fig.suptitle(title)
     subfigs = fig.subfigures(nrows=1, ncols=ksToPlot)
@@ -108,13 +148,27 @@ def plotErrors(resultsByKByEps, ks, epss, ksToPlot, epssToPlot, res = 6, title='
         axs = subfig.subplots(nrows=epssToPlot, ncols=1)
         for col, ax in enumerate(axs):
             eps = epss[col]
-            plotTimeIntegrationResults(ax, resultsByKByEps[k][eps], f"$\epsilon$={eps}")
+            plotErrorsToAx(ax, resultsByKByEps[k][eps], f"$\epsilon$={eps}")
     # plt.tight_layout()
     plt.show()
     
 def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
                 QOrthErr, nonPOrthErr, nonQOrthErr,
                 res=3):
+    """Plots result from Lanczos/best approx comparison
+    
+    Args:
+    n (int): number of datapoints
+    singvals (numpy array): true singular values
+    WErr (list): list of W errors
+    WNErr (list): list of W errors without reorthogonalization
+    bestAppErr (list): list of best approximation errors
+    POrthErr (list): list of orth error of P
+    QOrthErr (list): list of orth error of Q
+    nonPOrthErr (list): list of orth error of P
+    nonQOrthErr (list): list of orth error of Q
+    res (float): plot resolution
+    """
     fig, axs = plt.subplots(1, 3, figsize=(3*res, 1*res))
     x = range(1,n+1)
     axs[0].semilogy(x, singvals, '.')
@@ -123,7 +177,7 @@ def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
     axs[0].grid()
     
     axs[1].plot(x, WErr, label=r"$||W_{\perp}-A||_F$")
-    axs[1].plot(x, WNerr, label=r"$||W-A||_F$")
+    axs[1].plot(x, WNerr, '--', label=r"$||W-A||_F$")
     axs[1].plot(x, bestAppErr, label=r"$||X-A||_F$")
     axs[1].legend()
     axs[1].set_title(f"Rank k approximation error")
@@ -131,9 +185,9 @@ def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
     axs[1].grid()
     
     axs[2].plot(x, nonPOrthErr, label=r"$||P_k^T P_k - I||_F$")
-    axs[2].plot(x, nonQOrthErr, label=r"$||Q_k^T Q_k - I||_F$")
+    axs[2].plot(x, nonQOrthErr, '--',  label=r"$||Q_k^T Q_k - I||_F$")
     axs[2].plot(x, POrthErr, label=r"$||P_{\perp k}^T P_{\perp k} - I||_F$")
-    axs[2].plot(x, QOrthErr, label=r"$||Q_{\perp k}^T Q_{\perp k} - I||_F$")
+    axs[2].plot(x, QOrthErr, '--', label=r"$||Q_{\perp k}^T Q_{\perp k} - I||_F$")
     axs[2].set_title(f"Non-orthogonality error for $P_k$ and $Q_k$")
     axs[2].set_xlabel("k")
     axs[2].legend()
@@ -143,6 +197,15 @@ def PlotSVDTest(n, singvals, WErr, WNerr, bestAppErr, POrthErr,
     plt.show()
     
 def plotSVDComparison(Ylist, k, A, timesteps, numPoints=50):
+    """ Plots comparison of true SV's against SV's of approximation
+    
+    Args:
+    Ylist (list): list of approximations
+    k (int): rank of approximations
+    A (function): function, appproximand
+    timesteps (list): time points for approximations in Ylist
+    numPoints (int): number of timesteps for plotting
+    """
     skipparam = round(len(timesteps)/numPoints)
     ts = timesteps[::skipparam]
     trueSing = np.zeros((k, len(ts)))
@@ -168,7 +231,6 @@ def plotSVDComparison(Ylist, k, A, timesteps, numPoints=50):
     plt.title(f'Singular values, k={k}')
     plt.xlabel("time [s]")
     plt.show()
-    pass
     
 def animate_matrices(matrices, timesteps, total_anim_time, updateCbar = True):
     """
@@ -221,6 +283,13 @@ def animate_matrices(matrices, timesteps, total_anim_time, updateCbar = True):
     return ani
 
 def plotCols(U, V, t, res=3):
+    """Plots Columns of U and V
+    
+    Args:
+    U, V (numpy arrays): left and right approximation matrices
+    t (float): time U and V are sampled at
+    res (float): plot resolution
+    """
     fig, axs = plt.subplots(1, 2, figsize=(2*res, 2*res))
     axs[0].imshow(U, aspect='auto')
     axs[0].set_title(f"U")
@@ -237,10 +306,14 @@ def plotCols(U, V, t, res=3):
     fig.suptitle(f"Columns of U and V at t:{t:.5f}")
     
     plt.tight_layout()
-    
-    pass
 
 def plotCayComp(dirtime, C1time, CQRtime, ks):
+    """Plot performance comparison of different cayley map algs
+    
+    Args:
+    dirtime, C2time, CQRtime (lists): list of copmutation times for the diff. algs
+    ks (list): list of k values
+    """
     plt.plot(ks, dirtime, label="Direct")
     plt.plot(ks, C1time, label="Method 2")
     plt.plot(ks, CQRtime, label="QR method")
